@@ -2,9 +2,12 @@ import json
 
 import boto3
 import requests
+import os
 from requests_aws4auth import AWS4Auth
 
-session = boto3.Session()
+aws_region = os.environ.get('AWS_REGION')
+
+session = boto3.Session(region_name=aws_region)
 aws_auth = AWS4Auth(
     region=session.region_name,
     service="lambda",

@@ -10,10 +10,7 @@ terraform {
   }
 }
 
-provider "aws" {
-  profile = var.profile
-  region  = var.region
-}
+provider "aws" {}
 
 data "aws_caller_identity" "this" {}
 
