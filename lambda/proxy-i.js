@@ -1,6 +1,7 @@
 if (typeof (awslambda) === 'undefined') {
     // For testing
     global.awslambda = require('./awslambda');
+    global.eventobject = require('./testing/eventobject');
 }
 const axios = require('axios');
 const pipeline = require('util').promisify(require('stream').pipeline);
@@ -33,7 +34,13 @@ exports.lambdaHandler = awslambda.streamifyResponse(async (event, responseStream
         const rawQueryString = event.headers['lambda-scraper-raw-query-string'] ? event.headers['lambda-scraper-raw-query-string'] : event.rawQueryString;
         let headers = Object.fromEntries(
             Object.entries(event.headers)
-                .filter(([key]) => !key.toLowerCase().startsWith('x-amz') && !key.toLowerCase().startsWith('x-forwarded-') && key.toLowerCase() !== 'host' && key !== 'lambda-scraper-raw-query-string')
+                .filter(([key]) => (
+                    !key.toLowerCase().startsWith('x-amz')
+                        && !key.toLowerCase().startsWith('x-forwarded-')
+                        && key.toLowerCase() !== 'host'
+                        && key.toLowerCase() !== 'content-length'
+                        && key !== 'lambda-scraper-raw-query-string'
+                ))
                 .map(([key, value]) => [key.replace(/^lambda-scraper-/, ''), value])
         );
         let url = event.rawPath.startsWith('/http') ? event.rawPath.substring(1) : 'https:/' + event.rawPath;
@@ -94,16 +101,8 @@ exports.lambdaHandler = awslambda.streamifyResponse(async (event, responseStream
 });
 
 if (require.main === module) { // For testing
-    const event = {
-        rawPath: '/https://ipinfo.io/ip',
-        rawQueryString: '',
-        headers: {},
-        requestContext: {
-            http: {
-                method: 'GET',
-            }
-        }
-    };
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    const event = eventobject;
 
     exports.lambdaHandler(event, {})
         .then()

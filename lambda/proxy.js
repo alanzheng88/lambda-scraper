@@ -1,6 +1,7 @@
 if (typeof (awslambda) === 'undefined') {
     // For testing
     global.awslambda = require('./awslambda');
+    global.eventobject = require('./testing/eventobject');
 }
 const axios = require('axios');
 const pipeline = require('util').promisify(require('stream').pipeline);
@@ -16,7 +17,12 @@ exports.lambdaHandler = awslambda.streamifyResponse(async (event, responseStream
         console.log('proxy-' + String(random) + ': ' + proxyUrl);
         let headers = Object.fromEntries(
             Object.entries(event.headers)
-            .filter(([key]) => !key.toLowerCase().startsWith('x-amz') && !key.toLowerCase().startsWith('x-forwarded-') && key.toLowerCase() !== 'host')
+            .filter(([key]) => (
+                !key.toLowerCase().startsWith('x-amz')
+                    && !key.toLowerCase().startsWith('x-forwarded-')
+                    && key.toLowerCase() !== 'host'
+                    && key.toLowerCase() !== 'content-length'
+            ))
             .map(([key, value]) => [key.toLowerCase() === 'authorization' ? 'lambda-scraper-' + key : key, value])
         );
         headers['host'] = proxyUrl.hostname;
@@ -90,16 +96,8 @@ exports.lambdaHandler = awslambda.streamifyResponse(async (event, responseStream
 });
 
 if (require.main === module) { // For testing
-    const event = {
-        rawPath: '/https://ipinfo.io/ip',
-        rawQueryString: '',
-        headers: {},
-        requestContext: {
-            http: {
-                method: 'GET',
-            }
-        }
-    };
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    const event = eventobject;
 
     exports.lambdaHandler(event, {})
         .then()

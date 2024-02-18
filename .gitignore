@@ -10,3 +10,4 @@ testCA.pem
 .bash_history
 terraform.tfvars
 notes.txt
+lambda/testing/*
